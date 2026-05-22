@@ -10,18 +10,20 @@ type Poem = {
   body: string;
   created_at: string;
   tags: string[] | null;
+  pinned: boolean;
 };
 
 export default function PublicPoemsPage() {
   const [poems, setPoems] = useState<Poem[]>([]);
   const [message, setMessage] = useState("読み込み中...");
-
+    
   useEffect(() => {
     const fetchPublicPoems = async () => {
       const { data, error } = await supabase
         .from("poems")
         .select("*")
         .eq("is_public", true)
+        .order("pinned", { ascending: false })
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -35,20 +37,51 @@ export default function PublicPoemsPage() {
 
     fetchPublicPoems();
   }, []);
-
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+    };
   return (
     <main className="min-h-screen bg-black p-8 text-white">
       <div className="mx-auto max-w-3xl">
-        <Link href="/" className="text-sm text-zinc-500">
-          ← 管理画面へ
-        </Link>
+        
 
-        <header className="mt-10">
-          <p className="text-sm tracking-widest text-zinc-500">PUBLIC POEMS</p>
-          <h1 className="mt-2 text-4xl font-bold">公開作品</h1>
-          <p className="mt-4 text-zinc-400">
-            書き残した言葉たち。
-          </p>
+        <header className="mt-10 border-b border-zinc-800 pb-8">
+        <p className="text-xs tracking-[0.3em] text-zinc-500">POEM ARCHIVE</p>
+        <h1 className="mt-4 text-4xl font-bold">言葉の保管庫</h1>
+        <p className="mt-4 leading-7 text-zinc-400">
+            夜に書いた言葉、残しておきたい感情、まだ名前のない詩。
+        </p>
+        <div className="mt-8 space-y-3">
+            <p className="text-sm text-zinc-300">
+                倫也 阿部
+            </p>
+
+            <p className="max-w-lg text-sm leading-7 text-zinc-500">
+                夜に書いた言葉や、感情になりきれなかったものを記録しています。
+            </p>
+
+            <div className="flex gap-4 text-sm">
+                <a
+                href="https://instagram.com/r_of_the_moon"
+                target="_blank"
+                className="text-zinc-500 hover:text-white"
+                >
+                Instagram
+                </a>
+
+                <a
+                href="https://github.com/tomoya-1124"
+                target="_blank"
+                className="text-zinc-500 hover:text-white"
+                >
+                GitHub
+                </a>
+            </div>
+        </div>
         </header>
 
         <section className="mt-10 space-y-5">
@@ -57,11 +90,18 @@ export default function PublicPoemsPage() {
           {poems.map((poem) => (
             <Link
               key={poem.id}
-              href={`/poems/${poem.id}`}
-              className="block rounded border border-zinc-800 bg-zinc-950 p-6 hover:border-zinc-500"
+              href={`/public/${poem.id}`}
+              className="block rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6 transition hover:-translate-y-1 hover:border-zinc-500"
             >
+                {poem.pinned && (
+                <p className="mb-3 text-xs tracking-[0.25em] text-zinc-500">
+                    PICKED
+                </p>
+                )}
               <h2 className="text-xl font-bold">{poem.title}</h2>
-
+                <p className="mt-2 text-xs text-zinc-500">
+                {formatDate(poem.created_at)}
+                </p>
                 {poem.tags && poem.tags.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                     {poem.tags.map((tag) => (
@@ -75,9 +115,9 @@ export default function PublicPoemsPage() {
                 </div>
                 )}
 
-              <p className="mt-4 whitespace-pre-wrap text-zinc-300 line-clamp-4">
+              <p className="mt-5 whitespace-pre-wrap text-sm leading-8 text-zinc-300 line-clamp-5">
                 {poem.body}
-              </p>
+                </p>
 
               
             </Link>

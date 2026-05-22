@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Poem = {
   id: string;
@@ -12,6 +13,7 @@ type Poem = {
   is_public: boolean;
   created_at: string;
   tags: string[] | null;
+  pinned: boolean;
 };
 
 export default function Home() {
@@ -20,11 +22,17 @@ export default function Home() {
   const [body, setBody] = useState("");
   const [message, setMessage] = useState("");
   const [tags, setTags] = useState("");
+  const [status, setStatus] = useState("draft");
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
 
   const fetchPoems = async () => {
     const { data, error } = await supabase
       .from("poems")
       .select("*")
+      .order("pinned", { ascending: false })
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -36,8 +44,20 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchPoems();
-  }, []);
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+
+      if (!data.session) {
+        router.push("/login");
+        return;
+      }
+
+      setAuthChecked(true);
+      fetchPoems();
+    };
+
+    checkAuth();
+  }, [router]);;
 
   const handleSave = async () => {
   if (!title.trim() || !body.trim()) {
@@ -47,7 +67,7 @@ export default function Home() {
     const { error } = await supabase.from("poems").insert({
       title,
       body,
-      status: "draft",
+      status,
       is_public: false,
       tags: tags
         .split(/[,、]/)
@@ -63,6 +83,7 @@ export default function Home() {
     setTitle("");
     setBody("");
     setTags("");
+    setStatus("draft");
     setMessage("保存しました");
     fetchPoems();
   };
@@ -98,11 +119,65 @@ export default function Home() {
     setMessage(!current ? "公開にしました" : "非公開にしました");
     fetchPoems();
   };
+  const handleTogglePinned = async (
+    id: string,
+    current: boolean
+  ) => {
+    const { error } = await supabase
+      .from("poems")
+      .update({
+        pinned: !current,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
 
+    if (error) {
+      setMessage("固定設定エラー: " + error.message);
+      return;
+    }
+
+    fetchPoems();
+  };
+  const filteredPoems = poems.filter((poem) => {
+    const matchesSearch =
+      poem.title.toLowerCase().includes(search.toLowerCase()) ||
+      poem.body.toLowerCase().includes(search.toLowerCase()) ||
+      (poem.tags ?? []).some((tag) =>
+        tag.toLowerCase().includes(search.toLowerCase())
+      );
+
+    const matchesStatus =
+      filterStatus === "all" || poem.status === filterStatus;
+
+    return matchesSearch && matchesStatus;
+  });
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  if (!authChecked) {
+    return (
+      <main className="min-h-screen bg-black p-8 text-white">
+        <p>ログイン確認中...</p>
+      </main>
+    );
+  }
   return (
     <main className="min-h-screen bg-black text-white p-8">
       <h1 className="text-3xl font-bold">Poem Archive</h1>
-
+      <button
+        onClick={async () => {
+          await supabase.auth.signOut();
+          router.push("/login");
+        }}
+        className="mt-4 rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-400 hover:border-white hover:text-white"
+      >
+        ログアウト
+      </button>
       <section className="mt-8 max-w-2xl space-y-4">
         <input
           className="w-full rounded bg-zinc-900 p-3 text-white border border-zinc-700"
@@ -125,6 +200,16 @@ export default function Home() {
           onChange={(e) => setTags(e.target.value)}
         />
 
+        <select
+          className="w-full rounded border border-zinc-700 bg-zinc-900 p-3 text-white"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="draft">下書き</option>
+          <option value="complete">完成</option>
+          <option value="archive">保管</option>
+        </select>
+
         <button
           onClick={handleSave}
           className="rounded bg-white px-5 py-2 text-black font-bold"
@@ -134,18 +219,47 @@ export default function Home() {
 
         {message && <p>{message}</p>}
       </section>
+      <section className="mt-12 max-w-3xl space-y-4">
+        <input
+          className="w-full rounded border border-zinc-700 bg-zinc-900 p-3 text-white"
+          placeholder="検索..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
+        <select
+          className="w-full rounded border border-zinc-700 bg-zinc-900 p-3 text-white"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="all">すべて</option>
+          <option value="draft">下書き</option>
+          <option value="complete">完成</option>
+          <option value="archive">保管</option>
+        </select>
+      </section>
       <section className="mt-12 max-w-3xl">
         <h2 className="text-xl font-bold">作品一覧</h2>
 
         <div className="mt-4 space-y-4">
-          {poems.map((poem) => (
+          {filteredPoems.map((poem) => (
             <Link
               key={poem.id}
               href={`/poems/${poem.id}`}
               className="block rounded border border-zinc-800 bg-zinc-950 p-5 hover:border-zinc-500"
             >
-              <h3 className="text-lg font-bold">{poem.title}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold">{poem.title}</h3>
+
+                {poem.pinned && (
+                  <span className="text-xs text-yellow-400">
+                    ★
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-zinc-500">
+                {formatDate(poem.created_at)}
+              </p>
               <p className="mt-3 whitespace-pre-wrap text-zinc-300 line-clamp-3">
                 {poem.body}
               </p>
@@ -161,29 +275,58 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
+                
               )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full bg-zinc-800 px-3 py-1 text-xs text-zinc-400">
+                  {poem.status === "draft"
+                    ? "下書き"
+                    : poem.status === "complete"
+                    ? "完成"
+                    : "保管"}
+                </span>
 
-              <div className="mt-4 flex gap-3 text-sm text-zinc-500">
-                <span>{poem.is_public ? "公開" : "非公開"}</span>
+                <span className="rounded-full bg-zinc-800 px-3 py-1 text-xs text-zinc-400">
+                  {poem.is_public ? "公開中" : "非公開"}
+                </span>
+
+                {poem.pinned && (
+                  <span className="rounded-full bg-zinc-800 px-3 py-1 text-xs text-zinc-400">
+                    固定中
+                  </span>
+                )}
               </div>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDelete(poem.id);
-                }}
-                className="mt-4 rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-300 hover:border-red-500 hover:text-red-400"
-              >
-                削除
-              </button>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleTogglePublic(poem.id, poem.is_public);
-                }}
-                className="mt-4 mr-3 rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-300 hover:border-white hover:text-white"
-              >
-                {poem.is_public ? "非公開にする" : "公開する"}
-              </button>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleTogglePinned(poem.id, poem.pinned);
+                  }}
+                  className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-400 hover:border-white hover:text-white"
+                >
+                  {poem.pinned ? "固定解除" : "固定"}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleDelete(poem.id);
+                  }}
+                  className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-400 hover:border-red-500 hover:text-red-400"
+                >
+                  削除
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleTogglePublic(poem.id, poem.is_public);
+                  }}
+                  className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-400 hover:border-white hover:text-white"
+                >
+                  {poem.is_public ? "非公開にする" : "公開する"}
+                </button>
+              </div>
+              
+              
             </Link>
           ))}
         </div>
