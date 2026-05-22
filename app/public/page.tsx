@@ -11,6 +11,7 @@ type Poem = {
   created_at: string;
   tags: string[] | null;
   pinned: boolean;
+  image_url: string | null;
 };
 
 export default function PublicPoemsPage() {
@@ -97,6 +98,13 @@ export default function PublicPoemsPage() {
                 <p className="mb-3 text-xs tracking-[0.25em] text-zinc-500">
                     PICKED
                 </p>
+                )}
+                {poem.image_url && (
+                <img
+                    src={poem.image_url}
+                    alt={poem.title}
+                    className="mb-8 max-h-[520px] w-full rounded-2xl object-cover"
+                />
                 )}
               <h2 className="text-xl font-bold">{poem.title}</h2>
                 <p className="mt-2 text-xs text-zinc-500">

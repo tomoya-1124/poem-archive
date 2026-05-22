@@ -10,6 +10,8 @@ export default function EditPoemPage() {
   const id = params.id as string;
   const [tags, setTags] = useState("");
   const [status, setStatus] = useState("draft");
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -19,7 +21,7 @@ export default function EditPoemPage() {
     const fetchPoem = async () => {
       const { data, error } = await supabase
         .from("poems")
-        .select("title, body, tags, status")
+        .select("title, body, tags, status, image_url")
         .eq("id", id)
         .single();
 
@@ -32,12 +34,40 @@ export default function EditPoemPage() {
       setBody(data.body);
       setTags((data.tags ?? []).join(", "));
       setStatus(data.status ?? "draft");
+      setImageUrl(data.image_url ?? "");
       setMessage("");
     };
 
     fetchPoem();
   }, [id]);
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
+    setUploading(true);
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+        .from("poem-images")
+        .upload(fileName, file);
+
+    if (error) {
+        setMessage("画像アップロードエラー: " + error.message);
+        setUploading(false);
+        return;
+    }
+
+    const { data } = supabase.storage
+        .from("poem-images")
+        .getPublicUrl(fileName);
+
+    setImageUrl(data.publicUrl);
+    setUploading(false);
+    };
   const handleUpdate = async () => {
     if (!title.trim() || !body.trim()) {
       setMessage("タイトルと本文を入力してください");
@@ -50,6 +80,7 @@ export default function EditPoemPage() {
         title,
         body,
         status,
+        image_url: imageUrl,
         tags: tags
             .split(/[,、]/)
             .map((tag) => tag.trim())
@@ -93,10 +124,27 @@ export default function EditPoemPage() {
         value={status}
         onChange={(e) => setStatus(e.target.value)}
         >
+        
         <option value="draft">下書き</option>
         <option value="complete">完成</option>
         <option value="archive">保管</option>
         </select>
+        <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="w-full rounded border border-zinc-700 bg-zinc-900 p-3 text-white"
+            />
+
+            {uploading && <p className="text-sm text-zinc-400">アップロード中...</p>}
+
+            {imageUrl && (
+            <img
+                src={imageUrl}
+                alt="preview"
+                className="max-h-80 rounded border border-zinc-800 object-cover"
+            />
+            )}
         <button
           onClick={handleUpdate}
           className="rounded bg-white px-5 py-2 font-bold text-black"
