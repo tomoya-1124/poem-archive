@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Poem Archive
 
-## Getting Started
+黒を基調にした、個人用の詩・言葉のアーカイブアプリ。
 
-First, run the development server:
+日々書いた詩や感情、断片的な言葉を保存・公開するために制作しました。  
+管理画面と公開ページを分離し、作品サイトとして閲覧できる構成になっています。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Features
+
+### 管理機能
+- ログイン認証（Supabase Auth）
+- 詩の投稿
+- 編集・削除
+- 公開 / 非公開切り替え
+- タグ管理
+- ステータス管理
+  - 下書き
+  - 完成
+  - 保管
+- 固定（Pinned）機能
+- 画像アップロード（Supabase Storage）
+
+### 公開ページ
+- 公開作品一覧
+- 公開作品詳細ページ
+- タグ表示
+- 日付表示
+- 固定作品表示
+- 黒ベースの作品UI
+
+---
+
+## Tech Stack
+
+### Frontend
+- Next.js
+- TypeScript
+- Tailwind CSS
+
+### Backend / BaaS
+- Supabase
+  - Authentication
+  - PostgreSQL
+  - Storage
+
+### Deploy
+- Vercel
+
+---
+
+## Pages
+
+```txt
+/                  管理画面（ログイン必須）
+/login             ログイン
+/public            公開作品一覧
+/public/[id]       公開作品詳細
+/poems/[id]        管理用詳細
+/poems/[id]/edit   編集画面
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+git clone https://github.com/tomoya-1124/poem-archive.git
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+cd poem-archive
 
-## Deploy on Vercel
+npm install
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Future Plans
+
+* カルーセル型Reader UI
+* OGP対応
+* モバイルUI改善
+* Markdown対応
+* BGMリンク機能
+* アニメーション演出
+* 作品検索強化
+
+---
+
+## Author
+
+Tomoya Abe
+
+GitHub:
+[https://github.com/tomoya-1124](https://github.com/tomoya-1124)
