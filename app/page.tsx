@@ -355,9 +355,25 @@ export default function Home() {
               前へ
             </button>
 
-            <span className="text-sm text-zinc-500">
-              {currentPage} / {totalPages}
-            </span>
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalPages }, (_, index) => {
+                const pageNumber = index + 1;
+
+                return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`rounded border px-3 py-1 text-sm ${
+                      currentPage === pageNumber
+                        ? "border-white text-white"
+                        : "border-zinc-700 text-zinc-400 hover:border-white hover:text-white"
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+            </div>
 
             <button
               onClick={() =>
