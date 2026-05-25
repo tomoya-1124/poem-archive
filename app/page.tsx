@@ -27,6 +27,7 @@ export default function Home() {
   const [filterStatus, setFilterStatus] = useState("all");
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchPoems = async () => {
     const { data, error } = await supabase
@@ -166,6 +167,14 @@ export default function Home() {
       </main>
     );
   }
+  const itemsPerPage = 5;
+
+  const totalPages = Math.ceil(filteredPoems.length / itemsPerPage);
+
+  const paginatedPoems = filteredPoems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
   return (
     <main className="min-h-screen bg-black text-white p-8">
       <h1 className="text-3xl font-bold">Poem Archive</h1>
@@ -224,13 +233,19 @@ export default function Home() {
           className="w-full rounded border border-zinc-700 bg-zinc-900 p-3 text-white"
           placeholder="検索..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
         />
 
         <select
           className="w-full rounded border border-zinc-700 bg-zinc-900 p-3 text-white"
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
+          onChange={(e) => {
+            setFilterStatus(e.target.value);
+            setCurrentPage(1);
+          }}
         >
           <option value="all">すべて</option>
           <option value="draft">下書き</option>
@@ -242,7 +257,7 @@ export default function Home() {
         <h2 className="text-xl font-bold">作品一覧</h2>
 
         <div className="mt-4 space-y-4">
-          {filteredPoems.map((poem) => (
+          {paginatedPoems.map((poem) => (
             <Link
               key={poem.id}
               href={`/poems/${poem.id}`}
@@ -330,6 +345,31 @@ export default function Home() {
             </Link>
           ))}
         </div>
+        {totalPages > 1 && (
+          <div className="mt-8 flex items-center gap-3">
+            <button
+              onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              disabled={currentPage === 1}
+              className="rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-400 disabled:opacity-30"
+            >
+              前へ
+            </button>
+
+            <span className="text-sm text-zinc-500">
+              {currentPage} / {totalPages}
+            </span>
+
+            <button
+              onClick={() =>
+                setCurrentPage((page) => Math.min(page + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+              className="rounded border border-zinc-700 px-3 py-1 text-sm text-zinc-400 disabled:opacity-30"
+            >
+              次へ
+            </button>
+          </div>
+        )}
       </section>
     </main>
   );

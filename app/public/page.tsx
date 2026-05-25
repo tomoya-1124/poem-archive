@@ -17,6 +17,7 @@ type Poem = {
 export default function PublicPoemsPage() {
   const [poems, setPoems] = useState<Poem[]>([]);
   const [message, setMessage] = useState("読み込み中...");
+  const [currentPage, setCurrentPage] = useState(1);
     
   useEffect(() => {
     const fetchPublicPoems = async () => {
@@ -45,6 +46,14 @@ export default function PublicPoemsPage() {
         day: "numeric",
     });
     };
+  const itemsPerPage = 6;
+
+  const totalPages = Math.ceil(poems.length / itemsPerPage);
+
+  const paginatedPoems = poems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
   return (
     <main className="min-h-screen bg-black p-8 text-white">
       <div className="mx-auto max-w-3xl">
@@ -88,7 +97,7 @@ export default function PublicPoemsPage() {
         <section className="mt-10 space-y-5">
           {message && <p>{message}</p>}
 
-          {poems.map((poem) => (
+          {paginatedPoems.map((poem) => (
             <Link
               key={poem.id}
               href={`/public/${poem.id}`}
@@ -130,6 +139,36 @@ export default function PublicPoemsPage() {
               
             </Link>
           ))}
+
+          {totalPages > 1 && (
+            <div className="mt-12 flex items-center justify-center gap-4">
+              <button
+                onClick={() =>
+                  setCurrentPage((page) => Math.max(page - 1, 1))
+                }
+                disabled={currentPage === 1}
+                className="rounded border border-zinc-700 px-4 py-2 text-sm text-zinc-400 disabled:opacity-30"
+              >
+                前へ
+              </button>
+
+              <span className="text-sm text-zinc-500">
+                {currentPage} / {totalPages}
+              </span>
+
+              <button
+                onClick={() =>
+                  setCurrentPage((page) =>
+                    Math.min(page + 1, totalPages)
+                  )
+                }
+                disabled={currentPage === totalPages}
+                className="rounded border border-zinc-700 px-4 py-2 text-sm text-zinc-400 disabled:opacity-30"
+              >
+                次へ
+              </button>
+            </div>
+          )}
 
           {!message && poems.length === 0 && (
             <p className="text-zinc-500">公開中の作品はまだありません。</p>
