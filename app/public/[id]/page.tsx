@@ -12,6 +12,7 @@ type Poem = {
   tags: string[] | null;
   is_public: boolean;
   created_at: string;
+  image_url: string | null;
 };
 
 export default function PublicPoemDetailPage() {
@@ -63,6 +64,14 @@ export default function PublicPoemDetailPage() {
         </Link>
 
         <h1 className="mt-12 text-4xl font-bold">{poem.title}</h1>
+
+        {poem.image_url && (
+          <img
+            src={poem.image_url}
+            alt={poem.title}
+            className="mb-8 max-h-[520px] w-full rounded-2xl bg-zinc-950 object-contain"
+          />
+        )}
 
         {poem.tags && poem.tags.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
