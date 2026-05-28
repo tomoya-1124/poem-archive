@@ -152,7 +152,7 @@ export default function PublicPoemsPage() {
                 前へ
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2">
                 {Array.from({ length: totalPages }, (_, index) => {
                   const pageNumber = index + 1;
 
